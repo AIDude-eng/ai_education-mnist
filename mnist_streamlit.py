@@ -1,5 +1,5 @@
 import streamlit as st
-from architecture import FFNN
+from architecture import FFNN, CNN
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -132,6 +132,9 @@ if load_data and b1 and b2 and b3:
                  "aus welche Zahl es ist oder zumindest glaubt dass es ist.")
     if clf_name == "CNN":
         accuracy = 95.60
+        model = model = CNN(use_batch_norm=True, n_blocks=3, n_layers=1, channels=16, multiply_channels=1,
+                            global_max=False).to(device)
+        model.load_state_dict(torch.load(os.path.join('model', 'cnn')))
         st.write("## CNN")
         st.write("### CNN ist eine Abkürzung und steht für \"Konvolutionales Neuronales Netz\". Hier steckt im "
                  "Namen auch ein Neuronales Netz drinnen. Diese Art ist aber schon etwas komplizierter, "
@@ -185,22 +188,47 @@ if load_data and b1 and b2 and b3 and b4 and b5 and b6:
     st.write("### Nun schauen wir uns ein paar Beispiele an. Wähle mit dem Slider eine Zahl aus. Danach kannst du dir "
              "ansehen, ob deine KI diese Zahl richtig klassifiziert oder nicht.")
     slider = st.slider(label="Wähle mit dem Schieberegler eine Zahl aus,", min_value=0, max_value=99)
-    two_d = (np.reshape(x_train[slider], (28, 28)) * 255).astype(np.float32)
-    two_d_l = y_train[slider]
-    fig = plt.figure()
-    plt.title(f"Dieses Bild zeigt die Nummer {two_d_l}")
-    plt.imshow(two_d, cmap='gray_r')
-    st.pyplot(fig)
 
-    two_d = torch.tensor(two_d)
-    model.eval()
-    with torch.no_grad():
-        two_d = Variable(two_d.view(-1, input_dim))
-        two_d = torch.tensor(two_d, dtype=torch.float32)
-        two_d = two_d.to(device)
-        output = model(two_d)
-        pred = output.max(1, keepdim=True)[1]
-        pred = int(pred)
+    if clf_name == "Neuronales Netz":
+        two_d = (np.reshape(x_train[slider], (28, 28)) * 255).astype(np.float32)
+        two_d_l = y_train[slider]
+        fig = plt.figure()
+        plt.title(f"Dieses Bild zeigt die Nummer {two_d_l}")
+        plt.imshow(two_d, cmap='gray_r')
+        st.pyplot(fig)
+
+        two_d = torch.tensor(two_d)
+        model.eval()
+        with torch.no_grad():
+            two_d = Variable(two_d.view(-1, input_dim))
+            two_d = torch.tensor(two_d, dtype=torch.float32)
+            two_d = two_d.to(device)
+            output = model(two_d)
+            pred = output.max(1, keepdim=True)[1]
+            pred = int(pred)
+
+    if clf_name =="CNN":
+        trans = transforms.Normalize((0.1307,), (0.3081,))
+        two_d = (np.reshape(x_train[slider], (28, 28)) * 255).astype(np.float32)
+        two_d_l = y_train[slider]
+        fig = plt.figure()
+        plt.title(f"Dieses Bild zeigt die Nummer {two_d_l}")
+        plt.imshow(two_d, cmap='gray_r')
+        st.pyplot(fig)
+
+        two_d = np.reshape(x_train[slider], (28, 28)).astype(np.float32)
+        two_d = torch.tensor(two_d)
+        model.eval()
+        with torch.no_grad():
+            two_d = two_d.view(1,1,28,28)
+            two_d = torch.tensor(two_d, dtype=torch.float32)
+            two_d = two_d /255
+            two_d = trans(two_d)
+            two_d = two_d.to(device)
+            output = model(two_d)
+            pred = output.max(1, keepdim=True)[1]
+            pred = int(pred)
+
 
     st.write(f"## KI Klassifizierung: **{pred}**")
 
